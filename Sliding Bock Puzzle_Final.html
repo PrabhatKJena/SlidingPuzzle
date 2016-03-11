@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sliding Puzzle</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+    <script language="JavaScript">
+        var arr = [];
+        var moveCount = 0;
+        var patternCount = 1;
+        var patternR = 0;
+        var patternC = 0;
+        var patterns = [];
+        var selectedPattern = '';
+        var totalTime = 0;
+        var start = false;
+
+        $(document).ready(function () {
+            initPuzzle();
+            initPatterns();
+            $(".start-btn").on("click", function(){
+                if(!selectedPattern || selectedPattern == ''){
+                    alert("Please Select a Pattern You Want To Solve then Click Start.");
+                    return;
+                }
+                start = true;
+                startTimer();
+                $(this).attr("disabled", "disabled");
+            });
+
+            $(".reset-btn").on("click", function(){
+                location.reload();
+                $(".start-btn")[0].removeAttribute("disabled");
+            });
+
+            $(".start-btn")[0].removeAttribute("disabled");
+            $("#footer").width($("#top-tbl").width());
+        });
+        function startTimer() {
+            // start timer
+            var updateTime = function(){
+                totalTime++;
+                $("#timeSpan").html( Math.floor(totalTime/60)+" Min "+(totalTime%60)+" Sec");
+            };
+            setInterval(updateTime, 1000);
+        }
+        function renderPattern(r, c, p) {
+            var tblObj = "<table class='pattern'>";
+            for(var i=0;i<4;i++){
+                tblObj+="<tr>";
+                for(var j=0;j<4;j++){
+                    if(p[i][j]==0)
+                        tblObj+="<td class='blank'></td>";
+                    else
+                        tblObj+="<td>"+p[i][j]+"</td>";
+                }
+                tblObj+="</tr>";
+            }
+            tblObj+="</table><span class='label'>Pattern - "+patternCount+"</span>";
+            $("#pattern"+r+c).html(tblObj);
+            patternCount++;
+            patterns[r][c] = p;
+
+            $("#pattern"+r+c).on("click", function(){
+                $("#patterns .select-pattern").removeClass("select-pattern");
+                $("#pattern"+r+c).addClass("select-pattern");
+
+                //alert(patterns[r][c][3][2]);
+                selectedPattern = patterns[r][c];
+            });
+        }
+        function initPatterns() {
+            patterns[patternR++] = [];
+            var p00 = [[1,5,9,13],[2,6,10,14],[3,7,11,15],[4,8,12,0]];
+            renderPattern(0,0,p00);
+            var p01 = [[4,3,2,1],[8,7,6,5],[12,11,10,9],[0,15,14,13]];
+            renderPattern(0,1,p01);
+
+            patterns[patternR++] = [];
+            var p10 = [[0,15,14,13],[12,11,10,9],[8,7,6,5],[4,3,2,1]];
+            renderPattern(1,0,p10);
+            var p11 = [[0,12,8,4],[15,11,7,3],[14,10,6,2],[13,9,5,1]];
+            renderPattern(1,1,p11);
+
+            patterns[patternR++] = [];
+            var p20 = [[13,12,5,4],[14,11,6,3],[15,10,7,2],[0,9,8,1]];
+            renderPattern(2,0,p20);
+            var p21 = [[4,3,2,1],[5,14,13,12],[6,15,0,11],[7,8,9,10]];
+            renderPattern(2,1,p21);
+        }
+        function findSafe(r, c) {
+            //check up
+            if (r > 0 && arr[r - 1][c] == 0)
+                return [r - 1, c];
+            //check down
+            if (r < 3 && arr[r + 1][c] == 0)
+                return [r + 1, c];
+            //check left
+            if (c > 0 && arr[r][c - 1] == 0)
+                return [r, c - 1];
+            //check right
+            if (c < 3 && arr[r][c + 1] == 0)
+                return [r, c + 1];
+        }
+        function updateArr(r, c, newPos) {
+            var temp = arr[r][c];
+            arr[r][c] = arr[newPos[0]][newPos[1]];
+            arr[newPos[0]][newPos[1]] = temp;
+        }
+        function swapTile(r, c, newPos) {
+            var newR = newPos[0];
+            var newC = newPos[1];
+            var html = $("#tbl tr:eq("+r+") td:eq("+c+")").html();
+            $("#tbl tr:eq("+r+") td:eq("+c+")").html("");
+            $("#tbl tr:eq("+newR+") td:eq("+newC+")").html(html);
+        }
+        function disablePuzzle() {
+            $("#tbl :button").attr("disabled", "disabled");
+        }
+        function checkGoal() {
+            //logArr();
+            var flag = true;
+            for(var i=0;i<4;i++){
+                for(var j=0;j<4;j++) {
+                    if(arr[i][j] != selectedPattern[i][j]){
+                        flag = false;
+                    }
+                }
+            }
+            if(flag == true){
+                alert("Congrats ! You have completed the pattern.");
+                disablePuzzle();
+            }
+        }
+        function slide(r, c) {
+            //alert(selectedPattern)
+            if(!selectedPattern || selectedPattern == ''){
+                alert("Please Select a Pattern You Want To Solve then Click Start.");
+                return;
+            }
+            if(start == false){
+                alert("Please click Start button to start the game.");
+                return;
+            }
+            var newPos = findSafe(r, c);
+            if(newPos) {
+                //log(newPos[0], newPos[1])
+                updateArr(r, c, newPos);
+                swapTile(r,c,newPos);
+                moveCount++;
+                $("#moveCountSpan").html(moveCount);
+                checkGoal();
+            }
+        }
+        function initPuzzle() {
+            arr = [[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]];
+            //arr = [[4,3,2,1],[8,7,6,5],[12,11,10,9],[15,0,14,13]]; // for test
+            //logArr()
+            var c = 0;
+            for (var i = 0; i < 4; i++) {
+                $("#tbl").append("<tr><td></td><td></td><td></td><td></td></tr>");
+                for (var j = 0; j < 4; j++) {
+                    c = arr[i][j];
+                    if (c != 0) {
+                        $("#tbl tr:eq(" + i + ") td:eq(" + j + ")").html("<button class='hover'>" + c + "</button>");
+                    }
+                }
+            }
+
+            //logArr();
+            $("#tbl td").on("click", function () {
+                var r = $(this).closest('tr').index();
+                var c = $(this).index();
+                slide(r, c);
+            });
+        }
+        function log(val) {
+            $("#logger").val($("#logger").val() + "\n" + val);
+        }
+        function logArr() {
+            $("#logger").val($("#logger").val() + "\n");
+            for (var i = 0; i < 4; i++) {
+                for (var j = 0; j < 4; j++) {
+                    $("#logger").val($("#logger").val() + " " + arr[i][j]);
+                }
+                $("#logger").val($("#logger").val() + " " + "\n");
+            }
+        }
+    </script>
+    <style type="text/css">
+        html, body {
+            height: 100%;
+        }
+
+        html {
+            display: table;
+            margin: auto;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        .hover{
+            cursor: pointer;
+        }
+        .puzzle {
+            border: solid 8px #9d1843;
+            border-collapse: collapse;
+        }
+
+        .puzzle td {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            vertical-align: middle;
+            border: solid 2px #9d1843;
+        }
+
+        .puzzle button {
+            height: 50px;
+            width: 50px;
+            font-size: 180%;
+            font-weight: bolder;
+            color: #ff9700;
+            background-color: aqua;
+            text-align: center;
+            vertical-align: middle;
+        }
+        #patterns{
+            border: solid 3px #9d1843;
+            border-collapse: collapse;
+        }
+        .top-tbl{
+            border: 1px solid #ff9700;
+            padding: 3px;
+        }
+        .top-tbl td{
+            text-align: center;
+            vertical-align: top;
+            padding: 5px;
+        }
+        .pattern{
+            border: 1px solid #ff9700;
+            border-collapse: collapse;
+            background-color: rgba(156, 255, 60, 0.44)
+        }
+        .pattern td{
+            width: 20px;
+            height: 20px;
+            border: solid 1px #9d1843;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .blank{
+            background-color: aqua;
+        }
+        .label{
+            color: cadetblue;
+        }
+        .select-pattern{
+            background-color: rgba(93, 229, 17, 0.57);
+        }
+        .score{
+            border: 1px solid #ff9700;
+            border-collapse: collapse;
+            background-color: aqua;
+            margin-bottom: 10px;
+            width: 260px;
+        }
+        .score td {
+            text-align: left;
+            font-family: monospace;
+        }
+        .start-btn{
+            width: 60px; height: 25px; margin-top: 20px; font-size: 14px; margin-left: 10px;
+        }
+        .reset-btn{
+            width: 60px; height: 25px; margin-top: 20px; font-size: 14px; margin-left: 10px;
+        }
+        span h3{
+            margin: 0px;
+        }
+        .title{
+            color: #ff5630;
+            border: 1px solid #ff9700;
+            background-color: aqua;
+        }
+        td h2{
+            margin: 0px;
+        }
+        .m-0{
+            padding:0px !important;
+            color: cornflowerblue;
+        }
+    </style>
+</head>
+<body>
+    <table class="top-tbl" id="top-tbl">
+        <tr><td colspan="2" class="title"><h2>Sliding Fun !!!</h2></td></tr>
+        <tr>
+            <td>
+                <span><h3>Puzzle Patterns</h3></span>
+                <table id="patterns" cellpadding="5px">
+                    <tr>
+                        <td id="pattern00"></td>
+                        <td id="pattern01"></td>
+                    </tr>
+                    <tr>
+                        <td id="pattern10"></td>
+                        <td id="pattern11"></td>
+                    </tr>
+                    <tr>
+                        <td id="pattern20"></td>
+                        <td id="pattern21"></td>
+                    </tr>
+                </table>
+            </td>
+            <td>
+                <span><h3>&nbsp;</h3></span>
+                <table class="score">
+                    <tr>
+                        <td>Total no of moves : <span id="moveCountSpan">0</span></td>
+                    </tr>
+                    <tr>
+                        <td>Total time elapsed : <span id="timeSpan">0 Min 0 Sec</span></td>
+                    </tr>
+                </table>
+                <table class="puzzle" id="tbl">
+                </table>
+                <span><button class="start-btn"><b>Start</b></button></span>
+                <span><button class="reset-btn"><b>Reset</b></button></span>
+            </td>
+        </tr>
+        <tr><td colspan="2" class="m-0"><marquee direction="left" id="footer"><i>Developed by</i> <a href="https://plus.google.com/+PrabhatKumarJ/posts" target="_blank">Prabhat</a></marquee></td></tr>
+    </table>
+
+    <br>
+    <textarea id="logger" rows="25" style="display: none">
+    </textarea>
+</body>
+</html>
